@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气预报</title>
+    <link rel="shortcut icon" href="天气预报.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.min.css">
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script src="assets/bootstrap/dist/js/bootstrap.min.js"></script>
+    <style>
+        .container {
+            padding-top: 60px;
+        }
+
+        .check {
+            margin-top: 100px;
+        }
+
+        .lng-width,
+        .lat-width {
+            width: 100%;
+        }
+
+        .address-width {
+            width: 46.666666666%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 实时降雨容器 -->
+        <table class="table table-bordered table-striped table-hover" align="center" id="weatherForecastBox"
+            cellpadding="10px">
+        </table>
+        <!-- 地址容器 -->
+        <table class="table table-bordered table-striped table-hover" align="center" id="addressBox" cellpadding="10px">
+        </table>
+        <form class="form-inline text-center check">
+            <div class="form-group col-xs-4">
+                <div class="input-group lng-width">
+                    <input type="text" class="form-control" placeholder="请输入经度" aria-describedby="basic-addon2"
+                        id="lng">
+                    <span class="input-group-addon" id="basic-addon1">经度</span>
+                </div>
+            </div>
+            <div class="form-group col-xs-4">
+                <div class="input-group lat-width">
+                    <input type="text" class="form-control" placeholder="请输入纬度" aria-describedby="basic-addon2"
+                        id="lat">
+                    <span class="input-group-addon" id="basic-addon2">纬度</span>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary text-right" id="query" data-toggle="tooltip"
+                data-placement="top" title="点击查询未来2小时天气情况">查询</button>
+            <button type="button" class="btn btn-success text-right" id="oneClickQuery" data-toggle="tooltip"
+                data-placement="top" title="点击获取当前经纬度信息">一键获取</button>
+            <span id="mapBox" style="display: none;"><button type="button" class="btn btn-info text-right" id="queryMap"
+                    data-toggle="tooltip" data-placement="top" title="点击查看当前经纬度地图">查看地图</button></span>
+        </form>
+    </div>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    <!-- 引入template-web模版库文件 -->
+    <script src="js/template-web.js"></script>
+    <!-- 模版内容 -->
+    <script type="text/html" id="weatherForecast_tpl">
+        <tr class="h2">
+            <th colspan="2" class="text-center">天气 预报</th>
+        </tr>
+        <tr class="active text-center">
+            <th class="text-center">时 间</th>
+            <td>{{info.time}}</td>
+        </tr>
+        <tr class="success text-center">
+            <th class="text-center">最近一次更新时间</th>
+            <td>{{info.uptime}}</td>
+        </tr>
+        <tr class="warning text-center">
+            <th class="text-center">预测 情况</th>
+            <td>{{info.msg}}</td>
+        </tr>
+        <tr class="danger text-center">
+            <th class="text-center">标 记</th>
+            <td>{{info.ph}}</td>
+        </tr>
+    </script>
+    <script type="text/html" id="address_tpl">
+        <tr class="active text-center">
+            <th class="text-center">经 度</th>
+            <td>{{info.gcj.lng}}</td>
+        </tr>
+        <tr class="success text-center">
+            <th class="text-center">纬 度</th>
+            <td>{{info.gcj.lat}}</td>
+        </tr>
+        <tr class="info text-center">
+            <th class="text-center address-width">地 址</th>
+            <td>{{info.address}}</td>
+        </tr>
+    </script>
+    <script type="text/html" id="map_tpl">
+        <a href="https://cdn.asilu.com/map/#lng={{lng}}&lat={{lat}}">
+            <button type="button" class="btn btn-info text-right" id="queryMap" data-toggle="tooltip"
+                data-placement="top" title="点击查看当前经纬度地图">查看地图</button>
+        </a>
+    </script>
+    <script type="text/javascript">
+        var weatherForecast = document.getElementById("weatherForecastBox");
+        var addressBox = document.getElementById("addressBox");
+        var oneClickQuery = document.getElementById("oneClickQuery");
+        var queryMap = document.getElementById("queryMap");
+        var mapBox = document.getElementById("mapBox");
+        var query = document.getElementById("query");
+        var lng = document.getElementById("lng");
+        var lat = document.getElementById("lat");
+
+        query.addEventListener("click", function () {
+            if (lat.value.trim().length == 0) {
+                alert('纬度或经度的值不能为空！');
+            } else if (lng.value.trim().length == 0) {
+                alert('纬度或经度的值不能为空！');
+            } else {
+                $.ajax({
+                    type: "get",
+                    url: "https://query.asilu.com/weather/now",
+                    dataType: "jsonp",
+                    data: {
+                        lat: lat.value,
+                        lng: lng.value
+                    },
+                    success: function (data) {
+                        var html = template("weatherForecast_tpl", {
+                            info: data
+                        });
+                        weatherForecast.innerHTML = html;
+                    }
+                });
+                var html = template("map_tpl", {
+                    lat: lat.value,
+                    lng: lng.value
+                });
+                mapBox.innerHTML = html;
+                mapBox.style.display = "inline-block";
+            }
+        });
+        oneClickQuery.addEventListener("click", function () {
+            $.ajax({
+                type: "get",
+                url: "https://api.asilu.com/geo",
+                dataType: "jsonp",
+                success: function (data) {
+                    var html = template("address_tpl", {
+                        info: data
+                    });
+                    lat.value = data.gcj.lat;
+                    lng.value = data.gcj.lng;
+                    addressBox.innerHTML = html;
+                }
+            });
+            setTimeout(function () {
+                var html = template("map_tpl", {
+                    lat: lat.value,
+                    lng: lng.value
+                });
+                mapBox.innerHTML = html;
+                mapBox.style.display = "inline-block";
+            }, 800);
+        })
+    </script>
+</body>
+
+</html>
